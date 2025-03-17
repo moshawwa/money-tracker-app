@@ -56,6 +56,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
       });
 
       toast.success("Transaction added successfully");
+      // Reset form state
+      setDescription("");
+      setAmount("");
+      setType("income");
+      setCategory(CATEGORIES.INCOME);
+      setIsSubmitting(false);
       onClose();
     } catch (error) {
       toast.error("Failed to add transaction");

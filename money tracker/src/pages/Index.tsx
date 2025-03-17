@@ -22,30 +22,35 @@ const Index = () => {
       });
 
       // Add event listeners for modal
-      modalElementRef.current.addEventListener('hidden.bs.modal', () => {
+      const modalElement = modalElementRef.current;
+      
+      const handleHidden = () => {
         setIsFormOpen(false);
-      });
-    }
+      };
 
-    // Cleanup the modal when the component unmounts
-    return () => {
-      if (modalRef.current) {
-        modalRef.current.dispose();
-      }
-    };
+      modalElement.addEventListener('hidden.bs.modal', handleHidden);
+      modalElement.addEventListener('shown.bs.modal', () => {
+        setIsFormOpen(true);
+      });
+
+      return () => {
+        if (modalRef.current) {
+          modalRef.current.dispose();
+        }
+        modalElement.removeEventListener('hidden.bs.modal', handleHidden);
+      };
+    }
   }, []);
 
   const openForm = () => {
     if (modalRef.current) {
       modalRef.current.show();
-      setIsFormOpen(true);
     }
   };
 
   const closeForm = () => {
     if (modalRef.current) {
       modalRef.current.hide();
-      setIsFormOpen(false);
     }
   };
 
