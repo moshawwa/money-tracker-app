@@ -20,6 +20,11 @@ const Index = () => {
         backdrop: "static",
         keyboard: false,
       });
+
+      // Add event listeners for modal
+      modalElementRef.current.addEventListener('hidden.bs.modal', () => {
+        setIsFormOpen(false);
+      });
     }
 
     // Cleanup the modal when the component unmounts
@@ -47,7 +52,7 @@ const Index = () => {
   return (
     <TransactionProvider>
       <div className="min-vh-100 bg-light d-flex flex-column">
-        <Header onNewTransaction={openForm} isFormOpen={false} />
+        <Header onNewTransaction={openForm} isFormOpen={isFormOpen} />
 
         <main className="flex-grow-1 container py-4">
           <div className="mb-4">

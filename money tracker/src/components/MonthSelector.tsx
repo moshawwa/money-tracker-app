@@ -1,8 +1,7 @@
-import React from 'react';
 import { useTransactions } from '../context/TransactionContext';
 import { formatCurrency } from '../utils/formatters';
 
-const MonthSelector: React.FC = () => {
+const MonthSelector =() => {
   const { 
     selectedMonth, 
     setSelectedMonth, 

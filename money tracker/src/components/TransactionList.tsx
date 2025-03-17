@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Search } from "lucide-react"; // Import Trash2 icon
 import TransactionCard from "./TransactionCard";
-import { toast } from "sonner";
 import { useTransactions } from "../context/TransactionContext";
 
 const TransactionList: React.FC = () => {
@@ -11,7 +10,6 @@ const TransactionList: React.FC = () => {
 
   const handleDelete = (id: string) => {
     removeTransaction(id);
-    toast.success("Transaction deleted successfully");
   };
 
   const filteredTransactions = transactions
