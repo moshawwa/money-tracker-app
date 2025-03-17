@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Trash2 } from "lucide-react"; // Import Trash2 icon
+import { Search } from "lucide-react"; // Import Trash2 icon
 import TransactionCard from "./TransactionCard";
 import { toast } from "sonner";
 import { useTransactions } from "../context/TransactionContext";

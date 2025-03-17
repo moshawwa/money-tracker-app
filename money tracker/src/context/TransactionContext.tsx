@@ -32,12 +32,33 @@ export interface Transaction {
   type: "income" | "expense";
 }
 
+// Monthly Summary type
+export interface MonthlySummary {
+  month: string; // Format: "YYYY-MM"
+  income: number;
+  expenses: number;
+  balance: number;
+  transactions: Transaction[];
+}
+
 // State interface
 interface TransactionState {
   transactions: Transaction[];
+  selectedMonth: string; // Format: "YYYY-MM"
   isLoading: boolean;
   error: string | null;
 }
+
+// Initial state
+const initialState: TransactionState = {
+  transactions: [],
+  selectedMonth: new Date().toISOString().slice(0, 7), // Current month in YYYY-MM format
+  isLoading: false,
+  error: null,
+};
+
+// Local storage key
+const STORAGE_KEY = "money_tracker_transactions";
 
 // Action types
 type TransactionAction =
@@ -45,18 +66,9 @@ type TransactionAction =
   | { type: "REMOVE_TRANSACTION"; payload: string }
   | { type: "UPDATE_TRANSACTION"; payload: Transaction }
   | { type: "SET_TRANSACTIONS"; payload: Transaction[] }
+  | { type: "SET_SELECTED_MONTH"; payload: string }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null };
-
-// Initial state
-const initialState: TransactionState = {
-  transactions: [],
-  isLoading: false,
-  error: null,
-};
-
-// Local storage key
-const STORAGE_KEY = "money_tracker_transactions";
 
 // Reducer function
 const transactionReducer = (
@@ -92,6 +104,12 @@ const transactionReducer = (
         transactions: action.payload,
       };
 
+    case "SET_SELECTED_MONTH":
+      return {
+        ...state,
+        selectedMonth: action.payload,
+      };
+
     case "SET_LOADING":
       return {
         ...state,
@@ -109,23 +127,28 @@ const transactionReducer = (
   }
 };
 
-// Create context
+// Context type
 interface TransactionContextType extends TransactionState {
   addTransaction: (transaction: Omit<Transaction, "id">) => void;
   removeTransaction: (id: string) => void;
   updateTransaction: (transaction: Transaction) => void;
+  setSelectedMonth: (month: string) => void;
   getTotalIncome: () => number;
   getTotalExpenses: () => number;
   getBalance: () => number;
   getTransactionsByCategory: () => Record<string, number>;
   getRecentTransactions: (limit?: number) => Transaction[];
+  getCurrentMonthTransactions: () => Transaction[];
+  getMonthlySummary: (month: string) => MonthlySummary;
+  getAllMonthsSummary: () => MonthlySummary[];
 }
 
+// Create context
 const TransactionContext = createContext<TransactionContextType | undefined>(
   undefined
 );
 
-// Provider component
+// Provider props
 interface TransactionProviderProps {
   children: ReactNode;
 }
@@ -146,59 +169,10 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
           const transactions = JSON.parse(storedData);
           dispatch({ type: "SET_TRANSACTIONS", payload: transactions });
         } else {
-          // Sample data for first-time users
-          const sampleTransactions: Transaction[] = [
-            {
-              id: "1",
-              amount: 2500,
-              description: "Monthly Salary",
-              category: CATEGORIES.INCOME,
-              date: new Date(
-                Date.now() - 2 * 24 * 60 * 60 * 1000
-              ).toISOString(),
-              type: "income",
-            },
-            {
-              id: "2",
-              amount: 45.8,
-              description: "Grocery Store",
-              category: CATEGORIES.FOOD,
-              date: new Date(
-                Date.now() - 1 * 24 * 60 * 60 * 1000
-              ).toISOString(),
-              type: "expense",
-            },
-            {
-              id: "3",
-              amount: 850,
-              description: "Rent Payment",
-              category: CATEGORIES.HOUSING,
-              date: new Date().toISOString(),
-              type: "expense",
-            },
-            {
-              id: "4",
-              amount: 120,
-              description: "Internet Bill",
-              category: CATEGORIES.HOUSING,
-              date: new Date(
-                Date.now() - 3 * 24 * 60 * 60 * 1000
-              ).toISOString(),
-              type: "expense",
-            },
-            {
-              id: "5",
-              amount: 35.5,
-              description: "Restaurant Dinner",
-              category: CATEGORIES.FOOD,
-              date: new Date(
-                Date.now() - 4 * 24 * 60 * 60 * 1000
-              ).toISOString(),
-              type: "expense",
-            },
-          ];
-          dispatch({ type: "SET_TRANSACTIONS", payload: sampleTransactions });
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleTransactions));
+          // Start with empty transactions list
+          const emptyTransactions: Transaction[] = [];
+          dispatch({ type: "SET_TRANSACTIONS", payload: emptyTransactions });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(emptyTransactions));
         }
       } catch (error) {
         dispatch({
@@ -222,9 +196,8 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
   const addTransaction = (transaction: Omit<Transaction, "id">) => {
     const newTransaction: Transaction = {
       ...transaction,
-      id: crypto.randomUUID(), // Generate unique ID
+      id: crypto.randomUUID(),
     };
-
     dispatch({ type: "ADD_TRANSACTION", payload: newTransaction });
   };
 
@@ -236,14 +209,24 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
     dispatch({ type: "UPDATE_TRANSACTION", payload: transaction });
   };
 
+  const setSelectedMonth = (month: string) => {
+    dispatch({ type: "SET_SELECTED_MONTH", payload: month });
+  };
+
+  const getCurrentMonthTransactions = (): Transaction[] => {
+    return state.transactions.filter(
+      (t) => t.date.slice(0, 7) === state.selectedMonth
+    );
+  };
+
   const getTotalIncome = (): number => {
-    return state.transactions
+    return getCurrentMonthTransactions()
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + t.amount, 0);
   };
 
   const getTotalExpenses = (): number => {
-    return state.transactions
+    return getCurrentMonthTransactions()
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.amount, 0);
   };
@@ -253,7 +236,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
   };
 
   const getTransactionsByCategory = (): Record<string, number> => {
-    return state.transactions
+    return getCurrentMonthTransactions()
       .filter((t) => t.type === "expense")
       .reduce((acc, t) => {
         const category = t.category;
@@ -266,9 +249,38 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
   };
 
   const getRecentTransactions = (limit: number = 5): Transaction[] => {
-    return [...state.transactions]
+    return [...getCurrentMonthTransactions()]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, limit);
+  };
+
+  const getMonthlySummary = (month: string): MonthlySummary => {
+    const monthTransactions = state.transactions.filter(
+      (t) => t.date.slice(0, 7) === month
+    );
+    const monthIncome = monthTransactions
+      .filter((t) => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0);
+    const monthExpenses = monthTransactions
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return {
+      month,
+      income: monthIncome,
+      expenses: monthExpenses,
+      balance: monthIncome - monthExpenses,
+      transactions: monthTransactions,
+    };
+  };
+
+  const getAllMonthsSummary = (): MonthlySummary[] => {
+    const months = new Set(
+      state.transactions.map((t) => t.date.slice(0, 7))
+    );
+    return Array.from(months)
+      .map((month) => getMonthlySummary(month))
+      .sort((a, b) => b.month.localeCompare(a.month));
   };
 
   return (
@@ -278,11 +290,15 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
         addTransaction,
         removeTransaction,
         updateTransaction,
+        setSelectedMonth,
         getTotalIncome,
         getTotalExpenses,
         getBalance,
         getTransactionsByCategory,
         getRecentTransactions,
+        getCurrentMonthTransactions,
+        getMonthlySummary,
+        getAllMonthsSummary,
       }}
     >
       {children}
@@ -290,13 +306,11 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({
   );
 };
 
-// Custom hook to use the transaction context
-export const useTransactions = (): TransactionContextType => {
+// Custom hook
+export const useTransactions = () => {
   const context = useContext(TransactionContext);
   if (context === undefined) {
-    throw new Error(
-      "useTransactions must be used within a TransactionProvider"
-    );
+    throw new Error("useTransactions must be used within a TransactionProvider");
   }
   return context;
 };

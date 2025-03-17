@@ -15,13 +15,12 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
   className,
 }) => {
   const { addTransaction } = useTransactions();
-  const [type, setType] = useState<"income" | "expense">("expense");
+  const [type, setType] = useState<"income" | "expense">("income");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(
-    type === "income" ? CATEGORIES.INCOME : CATEGORIES.FOOD
-  );
+  const [category, setCategory] = useState(CATEGORIES.INCOME);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleTypeChange = (newType: "income" | "expense") => {
     setType(newType);
     // Update category when switching between income and expense
@@ -128,7 +127,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({
           <input
             id="description"
             className="form-control"
-            placeholder="What was this for?"
+            placeholder={type === "income" ? "Monthly Salary, Freelance Work, etc." : "What was this for?"}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required

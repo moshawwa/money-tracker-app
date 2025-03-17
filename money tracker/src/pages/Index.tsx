@@ -5,6 +5,7 @@ import BalanceSummary from "../components/BalanceSummary";
 import ExpenseChart from "../components/ExpenseChart";
 import TransactionList from "../components/TransactionList";
 import TransactionForm from "../components/TransactionForm";
+import MonthSelector from "../components/MonthSelector";
 import { Modal } from "bootstrap"; // Import Bootstrap's Modal class
 
 const Index = () => {
@@ -50,6 +51,7 @@ const Index = () => {
 
         <main className="flex-grow-1 container py-4">
           <div className="mb-4">
+            <MonthSelector />
             <BalanceSummary />
           </div>
 
